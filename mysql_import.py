@@ -1,7 +1,6 @@
 import mysql.connector
 import processor
 import os
-import processor
 
 host_glob = os.environ.get('HOST_MYSQL')
 user_glob = os.environ.get('USER_MYSQL')

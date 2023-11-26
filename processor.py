@@ -24,14 +24,40 @@ def check_existing_schema(schema):
     path = catch_schema_path(schema)
     return os.path.exists(path)
 
+def check_existing_table(schema, table):
+    path = catch_table_path(schema, table)
+    return os.path.exists(path)
+
 def catch_schema_path(schema: str):
-    path = (os.getcwd() + "\\schemas/{}").format(schema)
+    path = (os.getcwd() + "/schemas/{}").format(schema)
     return path
+
+def catch_table_path(schema, table):
+    path = (catch_schema_path(schema) + "/tables/{}.csv").format(table)
+    return os.path.exists(path)
 
 def create_schema(schema):
     path = catch_schema_path(schema)
     os.mkdir(path)
     os.mkdir(path + "/tables")
+
+def read_csv(path):
+    with open(path, newline = '') as file:
+        reader = csv.DictReader(file)
+        data = []
+        for row in reader:
+            data.append(row)
+        return data
+
+def write_csv(path):
+    return
+    
+def get_table_data(schema, table):
+    if check_existing_table(schema, table):
+        table_path = catch_table_path(schema, table)
+        data = read_csv(table_path)
+        return data
+
 
 def query():
 
@@ -69,10 +95,6 @@ def process_query(query):
 
     query_list = query.split(' ')
     query_parts = [element.replace(',', '') for element in query_list]
-    
-    data_type = 0
-    select_type = 0
-    has_order = 0
 
     try:
         if "select" in query_parts:
@@ -192,6 +214,7 @@ def select_where(data):
     if data[5]:
         order_column = data[5]
 
+
 def join_using(data):
     select_column = data[0]
     table = data[1]
@@ -213,6 +236,9 @@ def insert(data):
     insert_table = data[0]
     in_values = data[1]
 
+    get_table_data(insert_table)
+
+
 def delete(data):
     table = data[0]
     where_column = data[1]
@@ -230,7 +256,7 @@ def update(data):
 def data_import():
     answer= None
     while not (answer == "mysql" or answer == "postgres" or answer == "csv"):
-        print("Selecione csv ou um servidor (mysql ou postgres): ")
+        print("Selecione csv ou um servidor (csv / mysql / postgres): ")
         answer = input(">> ")
     if answer == "mysql":
         mysql_import.mysqlimport()
