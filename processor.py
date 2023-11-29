@@ -70,7 +70,8 @@ def query():
         list_schemas()
         schema = input("> ")
 
-        cs = input("Confirm Schema? (Y / N)")
+        print("Confirm Schema? (Y / N)")
+        cs = input("> ")
         if cs.upper() == "Y":
             if check_existing_schema(schema):
                 confirm_schema = True
@@ -83,7 +84,8 @@ def query():
         print("Insert query: ")
         query = input("> ")
         
-        cq = input("Confirm query? (Y / N)")
+        print("Confirm query? (Y / N)")
+        cq = input("> ")
         if cq.upper() == "Y":
             confirm_query = True
 
@@ -91,67 +93,78 @@ def query():
 
     return True
 
+
 def process_query(query):
 
     query_list = query.split(' ')
     query_parts = [element.replace(',', '') for element in query_list]
 
     try:
-        if "select" in query_parts:
+        if "select" in query_parts[0]:
             select_i = query_parts.index("select")
-            select_column = query_parts[select_i + 1]
+            select_columns = []
+            while query_parts[select_i + 1] != "from":
+                select_columns.append(query_parts[select_i + 1])
 
             if "from" in query_parts:
                 from_i = query_parts.index("from")
                 table = query_parts[from_i + 1]
 
+                result = _from(select_columns, table)
+
                 if "where" in query_parts:
                     where_i = query_parts.index("where")
+                    
                     where_column = query_parts[where_i + 1]
-
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    data = [select_column, table, where_column, where_condition, value]
+                    _where(where_column, where_condition, value)
+
+                    if "or" in query_parts:
+                        or_i = query_parts.index("or")
+                        where_column2 = query_parts[or_i + 1]
+                        where_condition2 = query_parts[or_i + 2]
+                        value2 = query_parts[or_i + 3]
+
+                        _where(where_column2, where_condition2, value2)
+
+                    elif "and" in query_parts:
+                        or_i = query_parts.index("or")
+                        where_column2 = query_parts[or_i + 1]
+                        where_condition2 = query_parts[or_i + 2]
+                        value2 = query_parts[or_i + 3]
+
+                        _and(where_column, where_condition, value)
                     
                     if "order" in query_parts:
                         order_i = query_parts.index("order")
-                        order_column = query_parts[order_i + 1]
-                        data.append(order_column)                   
-
-                    select_where(data)
-
+                        order_column = query_parts[order_i + 1]                
+                        
                 elif "join" in query_parts: 
                     join_i = query_parts.index("join")
                     join_table = query_parts[join_i + 1]
+
+                    _join(join_table)
 
                     if "using" in query_parts:
                         using_i = query_parts.index("using")
                         using_column = query_parts[using_i + 1]
 
-                        data = [select_column, table, join_table, using_column]
-
-                        if "order" in query_parts:
-                            order_i = query_parts.index("order")
-                            order_column = query_parts[order_i + 1]
-                            data.append(order_column)    
-                            
-                        join_using(data)
+                        _using(using_column)
 
                     elif "on" in query_parts:
                         on_i = query_parts.index("on")
                         on_column_1 = query_parts[on_i + 1]
                         on_column_2 = query_parts[on_i + 3]
 
-                        data = [select_column, table, join_table, on_column_1, on_column_2]
+                        _on(on_column_1, on_column_2)
 
-                        if "order" in query_parts:
-                            order_i = query_parts.index("order")
-                            order_column = query_parts[order_i + 1]  
-                            data.append(order_column)  
-
-                        join_on(data)
-                      
+                if "order" in query_parts:
+                    order_i = query_parts.index("order")
+                    order_column = query_parts[order_i + 1]  
+                        
+                    _order(order_column)
 
         elif "insert" in query_parts:
             insert_i = query_parts.index("insert")
@@ -161,15 +174,15 @@ def process_query(query):
                 values_i = query_parts.index("order")
                 in_values = query_parts[values_i + 1]
 
-                data = [insert_table, in_values]
-                insert(data)
+                insert(insert_table, in_values)
 
         elif "delete" in query_parts:
-            delete_i = query_parts.index("delete")
             
             if "from" in query_parts:
                 from_i = query_parts.index("from")
                 table = query_parts[from_i + 1]
+
+                _from(None, table)
 
                 if "where" in query_parts:
                     where_i = query_parts.index("where")
@@ -178,8 +191,7 @@ def process_query(query):
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    data = [table, where_column, where_condition, value]
-                    delete(data)
+                    delete(table, where_column, where_condition, value)
 
         elif "update" in query_parts:
             update_i = query_parts.index("update")
@@ -196,61 +208,55 @@ def process_query(query):
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    data = [update_table, set_column, where_column, where_condition, value]
-                    update(data)
+                    update(update_table, set_column, where_column, where_condition, value)
 
     except:
         print("Error: Invalid query.")
         
     return True
 
+def _from(columns, table):
+    global schema
 
-def select_where(data):
-    select_column = data[0]
-    table = data[1]
-    where_column = data[2]
-    where_condition = data[3]
-    value = data[4]
-    if data[5]:
-        order_column = data[5]
+    data = []
 
+    data = get_table_data(schema, table)
 
-def join_using(data):
-    select_column = data[0]
-    table = data[1]
-    join_table = data[2]
-    using_column = data[3]
-    if data[4]:
-        order_column = data[4]
-        
-def join_on(data):
-    select_column = data[0]
-    table = data[1]
-    join_table = data[2]
-    on_column_1 = data[3]
-    on_column_2 = data[4]
-    if data[5]:
-        order_column = data[5]
+    if columns == None:
+        return data
 
-def insert(data):
-    insert_table = data[0]
-    in_values = data[1]
+    for row in data:
+        output = []
+        for key in iter(row):
+            if key in columns:
+                output.append(row[key])  
+    
+    return output
 
-    get_table_data(insert_table)
+def _where(column, condition, value):
+    data = []
+    data = _from(column)
 
+    for row in data:
+        output = []´
+        if row
 
-def delete(data):
-    table = data[0]
-    where_column = data[1]
-    where_condition = data[2]
-    value = data[3]
+def _and():
 
-def update(data):
-    update_table = data[0]
-    set_column = data[1]
-    where_column = data[2]
-    where_condition = data[3]
-    value   = data[4]
+def _join():
+
+def _using():
+
+def _on():
+
+def _order():
+
+def insert():
+
+def delete():
+
+def update():
+
 
 
 def data_import():
