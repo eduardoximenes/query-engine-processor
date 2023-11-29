@@ -4,14 +4,6 @@ import csv
 import mysql_import
 import os
 
-SELECT = 1
-SELECT_WHERE = 6
-JOIN_USING = 7
-JOIN_ON = 8
-INSERT = 3
-DELETE = 4
-UPDATE = 5
-
 schema = None
 data = []
 
@@ -24,17 +16,17 @@ def check_existing_schema(schema):
     path = catch_schema_path(schema)
     return os.path.exists(path)
 
-def check_existing_table(schema, table):
-    path = catch_table_path(schema, table)
+def check_existing_table(table: str, schema: str):
+    path = catch_table_path(table, schema)
     return os.path.exists(path)
 
 def catch_schema_path(schema: str):
     path = (os.getcwd() + "/schemas/{}").format(schema)
     return path
 
-def catch_table_path(schema, table):
+def catch_table_path(table: str, schema: str):
     path = (catch_schema_path(schema) + "/tables/{}.csv").format(table)
-    return os.path.exists(path)
+    return path
 
 def create_schema(schema):
     path = catch_schema_path(schema)
@@ -49,8 +41,19 @@ def read_csv(path):
             data.append(row)
         return data
 
-def write_csv(path):
-    return
+def write_csv(table: str, cursor, colum_names: list, schema: str) -> bool:
+    path_for_file = catch_table_path(table, schema)
+    table_data = []
+
+    for row in cursor:
+        table_data.append(row)
+
+    # headers = cursor.column_names
+
+    with open(path_for_file, "w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=colum_names)
+        writer.writeheader()
+        writer.writerows(table_data)
     
 def get_table_data(schema, table):
     if check_existing_table(schema, table):
@@ -238,24 +241,9 @@ def _where(column, condition, value):
     data = _from(column)
 
     for row in data:
-        output = []´
-        if row
+        output = []
 
-def _and():
 
-def _join():
-
-def _using():
-
-def _on():
-
-def _order():
-
-def insert():
-
-def delete():
-
-def update():
 
 
 

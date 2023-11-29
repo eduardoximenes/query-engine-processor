@@ -69,15 +69,15 @@ def mysqlimport():
     
     show_tables(cursor)
     print('Escolha a tabela para importar: ')
-    table = input('>> ')
+    table_imp = input('>> ')
     
     while True:
-        if mysql_check_table(table, cursor):
+        if mysql_check_table(table_imp, cursor):
             break
         else :
             print("erro : Tabela não existe no servidor.")
             print('Escolha a tabela para importar: ')
-            table = input('>> ')     
+            table_imp = input('>> ')     
 
     
     if not processor.check_existing_schema(schema=database_glob): 
@@ -90,22 +90,22 @@ def mysqlimport():
             processor.create_schema(schema=database_glob)
         else :
             return True
-        
-    # escrever existing table e write csv
-    if processor.check_existing_table(table, schema=database_glob):
+    
+    if processor.check_existing_table(table_imp, schema=database_glob):
         overwrite = None
         while not(overwrite == 's' or overwrite =='n'):
             print('Tabela já existente, gostaria de sobreescrever? (s/n)')
             overwrite = input('>> ')
         if overwrite == 's':
             headers = cursor.column_names
-            processor.write_csv(table, cursor, headers, schema=database_glob)
+            processor.write_csv(table_imp, cursor, headers, schema=database_glob)
         elif overwrite == 'n':
+            print("Importação encerrada.")
             return True
     else : 
-        #create a new file with the name of table
         headers = cursor.column_names
-        processor.write_csv(table, cursor, headers, schema=database_glob)
+        processor.write_csv(table_imp, cursor, headers, schema=database_glob)
+        print("Importação finalizada.")
             
     cursor.close()
     conn.close()
