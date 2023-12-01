@@ -91,7 +91,7 @@ def mysqlimport():
         else :
             return True
     
-    if processor.check_existing_table(table_imp, schema=database_glob):
+    if processor.check_existing_table(table=table_imp, schema=database_glob):
         overwrite = None
         while not(overwrite == 's' or overwrite =='n'):
             print('Tabela já existente, gostaria de sobreescrever? (s/n)')
