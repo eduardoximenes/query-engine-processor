@@ -82,7 +82,7 @@ def mysqlimport():
     
     if not processor.check_existing_schema(schema=database_glob): 
         create_folder = None
-        while not(create_folder == 's' or create_folder == 'n'):
+        while not(create_folder == 's' or create_folder == 'n'): 
             print('Esquema não encontrado localmente, gostaria de criá-lo? (s/n)')
             create_folder = input('>> ')
         
@@ -91,7 +91,7 @@ def mysqlimport():
         else :
             return True
     
-    if processor.check_existing_table(table=table_imp, schema=database_glob):
+    if processor.check_existing_table(schema=database_glob, table=table_imp):
         overwrite = None
         while not(overwrite == 's' or overwrite =='n'):
             print('Tabela já existente, gostaria de sobreescrever? (s/n)')

@@ -6,27 +6,28 @@ import postgres_import
 import csv_import
 import os
 
-SELECT  = "escolhe" 
-UPDATE  = "altere"
-SET     = "mete"
-INSERT  = "bota"
+SELECT  = "selecione"
+UPDATE  = "atualize"
+SET     = "define"
+INSERT  = "insere"
 DELETE  = "apaga"
-INTO    = "dentro"
-VALUES  = "paradas"
+INTO    = "na"
+VALUES  = "valores"
 FROM    = "de"
-JOIN    = "cola"
-ON      = "naonde"
-USING   = "usando" 
-WHERE   = "se"
+JOIN    = "junta"
+ON      = "em"
+USING   = "usando"
+WHERE   = "onde"
 AND     = "e"
 OR      = "ou"
-ORDER   = "arruma"
+ORDER   = "ordene"
 
 schema = None
 commands = {}
+result = []
 
 def list_schemas():
-    schemas = os.listdir(os.getcwd() + "/schemas")
+    schemas = os.listdir(os.getcwd() + "\\schemas")
     for file in schemas:
         print("- " + file.replace(".csv", ""))
 
@@ -39,17 +40,17 @@ def check_existing_table(schema: str, table: str):
     return os.path.exists(path)
 
 def catch_schema_path(schema: str):
-    path = (os.getcwd() + "/schemas/{}").format(schema)
+    path = (os.getcwd() + "\\schemas\\{}").format(schema)
     return path
 
 def catch_table_path(schema: str, table: str):
-    path = (catch_schema_path(schema) + "/tables/{}.csv").format(table)
+    path = (catch_schema_path(schema) + "\\tables\\{}.csv").format(table)
     return path
 
 def create_schema(schema):
     path = catch_schema_path(schema)
     os.mkdir(path)
-    os.mkdir(path + "/tables")
+    os.mkdir(path + "\\tables")
 
 def read_csv(path):
     with open(path, newline = '') as file:
@@ -60,7 +61,7 @@ def read_csv(path):
         return data
 
 def write_csv(table: str, cursor, colum_names: list, schema: str) -> bool:
-    path_for_file = catch_table_path(table, schema)
+    path_for_file = catch_table_path(schema, table)
     table_data = []
 
     for row in cursor:
@@ -86,21 +87,21 @@ def query():
     global commands
 
     commands = {
-        "escolhe": None,            # SELECT
-        "altere": None,             # UPDATE
-        "mete": None,               # SET
-        "bota": None,               # INSERT
+        "selecione": None,          # SELECT
+        "atualize": None,           # UPDATE
+        "define": None,             # SET
+        "insere": None,             # INSERT
         "apaga": None,              # DELETE
-        "dentro": None,             # INTO
-        "paradas": None,            # VALUES
+        "na": None,                 # INTO
+        "valores": None,            # VALUES
         "de": None,                 # FROM
-        "cola": None,               # JOIN
-        "naonde": None,             # ON
+        "junta": None,              # JOIN
+        "em": None,                 # ON
         "usando": None,             # USING    
-        "se": None,                 # WHERE
+        "onde": None,               # WHERE
         "e": None,                  # AND
         "ou": None,                 # OR
-        "arruma": None,             # ORDER BY 
+        "ordene": None,             # ORDER BY 
     }
 
     confirm_schema = False
@@ -110,10 +111,10 @@ def query():
     while not confirm_schema:
         print("Select schema: ")
         list_schemas()
-        schema = input("> ")
+        schema = input(">> ")
 
-        print("Confirm Schema? (Y / N)")
-        cs = input("> ")
+        print("Confirm Schema? (Y | N)")
+        cs = input(">> ")
         if cs.upper() == "Y":
             if check_existing_schema(schema):
                 confirm_schema = True
@@ -124,10 +125,10 @@ def query():
     while not confirm_query:
         print("Selected Schema: {}".format(schema))
         print("Insert query: ")
-        query = input("> ")
+        query = input(">> ")
         
-        print("Confirm query? (Y / N)")
-        cq = input("> ")
+        print("Confirm query? (Y | N)")
+        cq = input(">> ")
         if cq.upper() == "Y":
             confirm_query = True
 
@@ -138,6 +139,8 @@ def query():
 
 def process_query(query):
 
+    global result
+
     query_list = query.split(' ')
     query_parts = [element.replace(',', '') for element in query_list]
     print(query_parts)
@@ -147,16 +150,20 @@ def process_query(query):
             select_i = query_parts.index(SELECT)
             select_columns = []
             i = 0
+
             while query_parts[select_i + i] != FROM:
                 select_columns.append(query_parts[select_i + i])
                 i += 1
-             
+
+            commands[SELECT] = select_columns
+
             if FROM in query_parts:
                 from_i = query_parts.index(FROM)
                 table = query_parts[from_i + 1]
 
-                result = _from(select_columns, table)
-                from_data = result
+                commands[FROM] = table
+
+                result = _select()
 
                 if WHERE in query_parts:
                     where_i = query_parts.index(WHERE)
@@ -165,8 +172,7 @@ def process_query(query):
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    result = _where(from_data, where_column, where_condition, value)
-                    where_data = result
+                    commands[WHERE] = where_column, where_condition, value
 
                     if OR in query_parts:
                         or_i = query_parts.index(OR)
@@ -174,7 +180,7 @@ def process_query(query):
                         where_condition2 = query_parts[or_i + 2]
                         value2 = query_parts[or_i + 3]
 
-                        result = _or(where_data, where_column2, where_condition2, value2)
+                        commands[OR] = where_column2, where_condition2, value2
 
                     elif AND in query_parts:
                         and_i = query_parts.index(AND)
@@ -182,46 +188,62 @@ def process_query(query):
                         where_condition2 = query_parts[and_i + 2]
                         value2 = query_parts[and_i + 3]
 
-                        result = _and(where_data, where_column, where_condition, value)
+                        commands[AND] = where_column, where_condition, value
+
+                    result = _where()
                     
                     if ORDER in query_parts:
                         order_i = query_parts.index(ORDER)
                         order_column = query_parts[order_i + 1]     
 
-                        _order(result, order_column)           
+                        commands[ORDER] = order_column
+
+                        result = _order()           
                         
                 elif JOIN in query_parts: 
                     join_i = query_parts.index(JOIN)
                     join_table = query_parts[join_i + 1]
 
+                    commands[JOIN] = join_table
+
                     if USING in query_parts:
                         using_i = query_parts.index(USING)
                         using_column = query_parts[using_i + 1] 
 
-                        _using(from_data, join_table, using_column)
+                        commands[USING] = using_column
+
+                        _using()
 
                     elif ON in query_parts:
                         on_i = query_parts.index(ON)
                         on_column_1 = query_parts[on_i + 1]
                         on_column_2 = query_parts[on_i + 3]
 
-                        _on(from_data, join_table, on_column_1, on_column_2)
+                        commands[ON] = on_column_1, on_column_2
+
+                        _on()
 
                 if ORDER in query_parts:
                     order_i = query_parts.index(ORDER)
                     order_column = query_parts[order_i + 1]  
                         
+                    commands[ORDER] = order_column
+
                     _order(order_column)
 
         elif INSERT in query_parts:
             insert_i = query_parts.index(INSERT)
             insert_table = query_parts[insert_i + 2]
 
+            commands[INSERT] = insert_table
+
             if VALUES in query_parts:
                 values_i = query_parts.index(ORDER)
                 in_values = query_parts[values_i + 1]
 
-                _insert(insert_table, in_values)
+                commands[VALUES] = in_values    
+
+                _insert()
 
         elif DELETE in query_parts:
             
@@ -229,6 +251,7 @@ def process_query(query):
                 from_i = query_parts.index(FROM)
                 table = query_parts[from_i + 1]
 
+                commands[FROM] = table
 
                 if WHERE in query_parts:
                     where_i = query_parts.index(WHERE)
@@ -237,15 +260,21 @@ def process_query(query):
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    _delete(table, where_column, where_condition, value)
+                    commands[WHERE] = where_column, where_condition, value
+
+                    _delete()
 
         elif UPDATE in query_parts:
             update_i = query_parts.index(UPDATE)
             update_table = query_parts[update_i + 1]
 
+            commands[UPDATE] = update_table
+
             if SET in query_parts:
                 set_i = query_parts.index(SET)
                 set_column = query_parts[set_i + 1]
+
+                commands[SET] = set_column
 
                 if WHERE in query_parts:
                     where_i = query_parts.index(WHERE)
@@ -254,18 +283,23 @@ def process_query(query):
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
-                    _update(update_table, set_column, where_column, where_condition, value)
+                    commands[WHERE] = where_column, where_condition, value
+
+                    _update(update_table)
 
     except:
         print("Error: Invalid query.")
 
     print(result)
-        
+
     return True
 
-def _from(columns, table):
-    global schema
+def _select():
 
+    global schema
+    columns = commands[SELECT]
+    table = commands[FROM]
+   
     data = []
     data = get_table_data(schema, table)
 
@@ -279,74 +313,92 @@ def _from(columns, table):
         for key in iter(row):
             if key in columns:
                 filtered_row[key] = row[key]
-                output.append(filtered_row)  
+                output.append(filtered_row)
     
     return output
 
-def _where(from_data, column, condition, value):
+def _where():
 
-    output = [] 
-
-    for row in from_data:
-        filtered_row = {}
-        if condition == ">":
-            if row.get(column) > value.strip():
-                filtered_row[column] = row[column]
-                output.append(filtered_row)
-        elif condition == "<":
-            if row.get(column) < value.strip():
-                filtered_row[column] = row[column]
-                output.append(filtered_row)
-        elif condition == ">=":
-            if row.get(column) >= value.strip():
-                filtered_row[column] = row[column]
-                output.append(filtered_row)
-        elif condition == "<=":
-            if row.get(column) <= value.strip():
-                filtered_row[column] = row[column]
-                output.append(filtered_row)
-        elif condition == "=":
-            if row.get(column) == value.strip():
-                filtered_row[column] = row[column]
-                output.append(filtered_row)
-
-    return output
-
-def _or(where_data, column, condition, value):
-    data = _where(column, condition, value)
-
-    for row in where_data:
-        data.append(row)
-
-    return data
-        
-
-def _and(where_data, column, condition, value):
-    data = _where(column, condition, value)
+    column = commands[WHERE][0]
+    condition = commands[WHERE][1]
+    value = commands[WHERE][2]
 
     output = []
 
-    for row in data:
-        if row in where_data:
-            output.append(row)
+    data = _where_condition(column, condition, value)
+
+    if commands[OR] != None:
+        column2 = commands[OR]
+        condition2 = commands[OR]
+        value2 = commands[OR]
+        data2 = _where_condition(column2, condition2, value2)
+
+        for row in data:
+            if (row in data) or (row in data2):
+                output.append(row)
+
+    elif commands[AND] != None:
+        column2 = commands[AND]
+        condition2 = commands[AND]
+        value2 = commands[AND]
+        data2 = _where_condition(column2, condition2, value2)
+        
+        for row in data:
+            if (row in data) and (row in data2):
+                output.append(row)
+    
 
     return output
 
-def _order(data, order_column):
-    if order_column in data[0]:
-        data.sort(key = lambda x: int(x[order_column])) 
+def _where_condition(column, condition, value):
+    
+    global result
 
-    return data
+    output = []
+
+    for row in result:
+        if condition == ">":
+            if row.get(column) > value.strip():
+                output.append(row)
+        elif condition == "<":
+            if row.get(column) < value.strip():
+                output.append(row)
+        elif condition == ">=":
+            if row.get(column) >= value.strip():
+                output.append(row)
+        elif condition == "<=":
+            if row.get(column) <= value.strip():
+                output.append(row)
+        elif condition == "=":
+            if row.get(column) == value.strip():
+                output.append(row)
+
+    return output
+
+def _order():
+
+    global result
+
+    order_column = commands[ORDER]
+
+    output = result.sort(key = lambda x: int(x[order_column])) 
+
+    return output
 
 def _on(from_data, join_table, column1, column2):
-    data = _from("*", join_table)
+    data = []
     
     for row in data:
         if row.get(column2) in from_data.get(column1):
             data.append(row)
 
-def _insert(table, values):
+def _using():
+    return
+
+def _insert():
     
+
+
     return 
 
 def _update(update_table, set_column, where_column, where_condition, value):
@@ -356,17 +408,18 @@ def _update(update_table, set_column, where_column, where_condition, value):
 
     return
 
-def _delete(table, where_column, where_condition, value):
-    data = _from("*", table)
-    delete_data = _where(where_column, where_condition, value)
+def _delete():
+
+    commands[SELECT] = ["*"]
+
+    data = _select()
+    delete_data = _where()
 
     for row in data:
         if row in delete_data:
             data.remove(row)
 
     return data
-
-
 
 def data_import():
     answer = None
@@ -393,7 +446,7 @@ def main():
     if answer == "i":
         data_import()
     elif answer == "c":
-       query()
+        query()
     elif answer == "s":
         return False
     
