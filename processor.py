@@ -109,27 +109,27 @@ def query():
 
     # Schema selection
     while not confirm_schema:
-        print("Select schema: ")
+        print("Selecione Schema: ")
         list_schemas()
         schema = input(">> ")
 
-        print("Confirm Schema? (Y | N)")
+        print("Confirmar Schema? (S | N)")
         cs = input(">> ")
-        if cs.upper() == "Y":
+        if cs.upper() == "S":
             if check_existing_schema(schema):
                 confirm_schema = True
             else:
-                print("Error: Schema not found.")
+                print("Erro: Schema não encontrado.")
    
     # Query definition
     while not confirm_query:
-        print("Selected Schema: {}".format(schema))
-        print("Insert query: ")
+        print("Schema Selecionado: {}".format(schema))
+        print("Insira query: ")
         query = input(">> ")
         
-        print("Confirm query? (Y | N)")
+        print("Confirmar query? (S | N)")
         cq = input(">> ")
-        if cq.upper() == "Y":
+        if cq.upper() == "S":
             confirm_query = True
 
     process_query(query)
@@ -229,7 +229,7 @@ def process_query(query):
                         
                     commands[ORDER] = order_column
 
-                    _order(order_column)
+                    result = _order(order_column)
 
         elif INSERT in query_parts:
             insert_i = query_parts.index(INSERT)
@@ -288,7 +288,7 @@ def process_query(query):
                     _update(update_table)
 
     except:
-        print("Error: Invalid query.")
+        print("Erro: Query inválida.")
 
     print(result)
 
@@ -358,16 +358,19 @@ def _where_condition(column, condition, value):
 
     for row in result:
         if condition == ">":
-            if row.get(column) > value.strip():
+            if float(row.get(column)) > float(value.strip()):
                 output.append(row)
         elif condition == "<":
-            if row.get(column) < value.strip():
+            if float(row.get(column)) < float(value.strip()):
                 output.append(row)
         elif condition == ">=":
-            if row.get(column) >= value.strip():
+            if float(row.get(column)) >= float(value.strip()):
                 output.append(row)
         elif condition == "<=":
-            if row.get(column) <= value.strip():
+            if float(row.get(column)) <= float(value.strip()):
+                output.append(row)
+        elif condition == "!=":
+            if row.get(column) != value.strip():
                 output.append(row)
         elif condition == "=":
             if row.get(column) == value.strip():
@@ -381,28 +384,50 @@ def _order():
 
     order_column = commands[ORDER]
 
-    output = result.sort(key = lambda x: int(x[order_column])) 
+    output = sorted(result, key = lambda x: int(x[order_column])) 
 
     return output
 
-def _on(from_data, join_table, column1, column2):
-    data = []
-    
-    for row in data:
+def _on():
+    from_data = commands[FROM]
+    join_data = commands[JOIN]
+    column1 = commands[ON][0]
+    column2 = commands[ON][1]
+
+
+    for row in join_data:
         if row.get(column2) in from_data.get(column1):
-            data.append(row)
+
+
 
 def _using():
     return
 
 def _insert():
-    
+    try:
+        insert_table = commands[INSERT]
+        values = commands[VALUES]
 
+        commands[SELECT] = ["*"]
 
-    return 
+        data = _select()
 
-def _update(update_table, set_column, where_column, where_condition, value):
-    data = _where(where_column, where_condition, value)
+        headers = list(data[0])
+
+        if len(headers) != len(values):
+            print("Error: Wrong insert arguments")
+            return False
+
+        new_row = {field: value for field, value in zip(data[0].keys(), values)}
+        insert_table.append(new_row)
+
+        write_csv(insert_table, data, headers, schema)
+        return True
+    except:
+        return False
+
+def _update():
+    data = _where()
 
     
 
@@ -410,21 +435,27 @@ def _update(update_table, set_column, where_column, where_condition, value):
 
 def _delete():
 
-    commands[SELECT] = ["*"]
+    try:
+        commands[SELECT] = ["*"]
 
-    data = _select()
-    delete_data = _where()
+        data = _select()
+        delete_data = _where()
 
-    for row in data:
-        if row in delete_data:
+        headers = list(data[0])
+
+        for row in delete_data:
             data.remove(row)
 
-    return data
+        write_csv(commands[FROM], data, headers, schema)
+        return True
+    
+    except:
+        return False
 
 def data_import():
     answer = None
     while not (answer == "mysql" or answer == "postgres" or answer == "csv" or answer == "ml" or answer == "ps"):
-        print("Select csv or a server (csv | mysql | postgres): ")
+        print("Selecione csv ou um servidor (csv | mysql | postgres): ")
         answer = input(">> ")
 
     if answer == "mysql" or answer == "ml":
