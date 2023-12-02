@@ -140,6 +140,7 @@ def query():
 def process_query(query):
 
     global result
+    result = []
 
     query_list = query.split(' ')
     query_parts = [element.replace(',', '') for element in query_list]
@@ -188,17 +189,9 @@ def process_query(query):
                         where_condition2 = query_parts[and_i + 2]
                         value2 = query_parts[and_i + 3]
 
-                        commands[AND] = where_column, where_condition, value
+                        commands[AND] = where_column2, where_condition2, value2
 
-                    result = _where()
-                    
-                    if ORDER in query_parts:
-                        order_i = query_parts.index(ORDER)
-                        order_column = query_parts[order_i + 1]     
-
-                        commands[ORDER] = order_column
-
-                        result = _order()           
+                    result = _where()       
                         
                 elif JOIN in query_parts: 
                     join_i = query_parts.index(JOIN)
@@ -226,26 +219,33 @@ def process_query(query):
                 if ORDER in query_parts:
                     order_i = query_parts.index(ORDER)
                     order_column = query_parts[order_i + 1]  
+                    order_direc = query_parts[order_i + 2]
                         
-                    commands[ORDER] = order_column
+                    commands[ORDER] = order_column, order_direc
 
-                    result = _order(order_column)
+                    result = _order()
 
         elif INSERT in query_parts:
             insert_i = query_parts.index(INSERT)
             insert_table = query_parts[insert_i + 2]
 
             commands[INSERT] = insert_table
+            commands[FROM] = insert_table
 
             if VALUES in query_parts:
-                values_i = query_parts.index(ORDER)
-                in_values = query_parts[values_i + 1]
+                values_i = query_parts.index(VALUES)
+                in_values = []
+                i = 1
+                while values_i + i < len(query_parts) :
+                    in_values.append(query_parts[values_i + i])
+                    i += 1
 
                 commands[VALUES] = in_values    
-
+    
                 _insert()
 
         elif DELETE in query_parts:
+            commands[SELECT] = ["*"]
             
             if FROM in query_parts:
                 from_i = query_parts.index(FROM)
@@ -253,10 +253,12 @@ def process_query(query):
 
                 commands[FROM] = table
 
+                result = _select()
+
                 if WHERE in query_parts:
                     where_i = query_parts.index(WHERE)
+                    
                     where_column = query_parts[where_i + 1]
-
                     where_condition = query_parts[where_i + 2]
                     value = query_parts[where_i + 3]
 
@@ -328,26 +330,35 @@ def _where():
     data = _where_condition(column, condition, value)
 
     if commands[OR] != None:
-        column2 = commands[OR]
-        condition2 = commands[OR]
-        value2 = commands[OR]
+        column2 = commands[OR][0]
+        condition2 = commands[OR][1]
+        value2 = commands[OR][2]
+        print(column2)
+        print(condition2)
+        print(value2)
         data2 = _where_condition(column2, condition2, value2)
 
         for row in data:
-            if (row in data) or (row in data2):
-                output.append(row)
+            output.append(row)
+        for row2 in data2: 
+            output.append(row2)
 
     elif commands[AND] != None:
-        column2 = commands[AND]
-        condition2 = commands[AND]
-        value2 = commands[AND]
+        column2 = commands[AND][0]
+        condition2 = commands[AND][1]
+        value2 = commands[AND][2]
+        print(column2)
+        print(condition2)
+        print(value2)
         data2 = _where_condition(column2, condition2, value2)
         
         for row in data:
-            if (row in data) and (row in data2):
+            if (row in data2):
                 output.append(row)
-    
 
+    else:
+        return data
+    
     return output
 
 def _where_condition(column, condition, value):
@@ -382,9 +393,15 @@ def _order():
 
     global result
 
-    order_column = commands[ORDER]
+    order_column = commands[ORDER][0]
+    order_direc = commands[ORDER][1]
 
-    output = sorted(result, key = lambda x: int(x[order_column])) 
+    desc = False
+
+    if order_direc.lower() == "decrescente":
+        desc = True
+
+    output = sorted(result, key=lambda x: x[order_column], reverse=desc)
 
     return output
 
@@ -397,13 +414,15 @@ def _on():
 
     for row in join_data:
         if row.get(column2) in from_data.get(column1):
-
-
+            return
 
 def _using():
     return
 
 def _insert():
+
+    global schema
+
     try:
         insert_table = commands[INSERT]
         values = commands[VALUES]
@@ -419,26 +438,26 @@ def _insert():
             return False
 
         new_row = {field: value for field, value in zip(data[0].keys(), values)}
-        insert_table.append(new_row)
+        print(new_row)
+        data.append(new_row)
 
         write_csv(insert_table, data, headers, schema)
         return True
+    
     except:
         return False
 
 def _update():
     data = _where()
 
-    
-
     return
 
 def _delete():
 
-    try:
-        commands[SELECT] = ["*"]
+    global result
 
-        data = _select()
+    try:
+        data = result
         delete_data = _where()
 
         headers = list(data[0])
@@ -467,13 +486,15 @@ def data_import():
 
     return
 
-
 def main():
     # wait for user interaction 
     answer = None
     while not (answer == "i" or answer == "c" or answer == "s"):
         print("Importar, consultar ou sair? (i | c | s)")
         answer = input(">> ")
+
+    answer = answer.lower()
+
     if answer == "i":
         data_import()
     elif answer == "c":
@@ -482,7 +503,6 @@ def main():
         return False
     
     return True
-
 
 if __name__ == "__main__":
     while main():
