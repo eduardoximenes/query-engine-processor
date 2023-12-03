@@ -83,8 +83,10 @@ def mysqlimport():
     if not processor.check_existing_schema(schema=database_glob): 
         create_folder = None
         while not(create_folder == 's' or create_folder == 'n'): 
-            print('Esquema não encontrado localmente, gostaria de criá-lo? (s/n)')
+            print('Esquema não encontrado localmente, gostaria de criá-lo? (S | N)')
             create_folder = input('>> ')
+
+            create_folder = create_folder.lower()
         
         if create_folder=='s':
             processor.create_schema(schema=database_glob)
@@ -94,8 +96,9 @@ def mysqlimport():
     if processor.check_existing_table(schema=database_glob, table=table_imp):
         overwrite = None
         while not(overwrite == 's' or overwrite =='n'):
-            print('Tabela já existente, gostaria de sobreescrever? (s/n)')
+            print('Tabela já existente, gostaria de sobreescrever? (S | N)')
             overwrite = input('>> ')
+            overwrite = overwrite.lower()
         if overwrite == 's':
             headers = cursor.column_names
             processor.write_csv(table_imp, cursor, headers, schema=database_glob)

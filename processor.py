@@ -146,161 +146,161 @@ def process_query(query):
     query_parts = [element.replace(',', '') for element in query_list]
     print(query_parts)
 
-    
-    if SELECT in query_parts:
-        select_i = query_parts.index(SELECT)
-        select_columns = []
-        i = 0
+    try:
+        if SELECT in query_parts:
+            select_i = query_parts.index(SELECT)
+            select_columns = []
+            i = 0
 
-        while query_parts[select_i + i] != FROM:
-            select_columns.append(query_parts[select_i + i])
-            i += 1
-
-        commands[SELECT] = select_columns
-
-        if FROM in query_parts:
-            from_i = query_parts.index(FROM)
-            table = query_parts[from_i + 1]
-
-            commands[FROM] = table
-
-            result = _select()
-
-            if WHERE in query_parts:
-                where_i = query_parts.index(WHERE)
-                
-                where_column = query_parts[where_i + 1]
-                where_condition = query_parts[where_i + 2]
-                value = query_parts[where_i + 3]
-
-                commands[WHERE] = where_column, where_condition, value
-
-                if OR in query_parts:
-                    or_i = query_parts.index(OR)
-                    where_column2 = query_parts[or_i + 1]
-                    where_condition2 = query_parts[or_i + 2]
-                    value2 = query_parts[or_i + 3]
-
-                    commands[OR] = where_column2, where_condition2, value2
-
-                elif AND in query_parts:
-                    and_i = query_parts.index(AND)
-                    where_column2 = query_parts[and_i + 1]
-                    where_condition2 = query_parts[and_i + 2]
-                    value2 = query_parts[and_i + 3]
-
-                    commands[AND] = where_column2, where_condition2, value2
-
-                result = _where()       
-                    
-            elif JOIN in query_parts: 
-                join_i = query_parts.index(JOIN)
-                join_table = query_parts[join_i + 1]
-
-                commands[JOIN] = join_table
-
-                if USING in query_parts:
-                    using_i = query_parts.index(USING)
-                    using_column = query_parts[using_i + 1] 
-
-                    commands[USING] = using_column
-
-                    _using()
-
-                elif ON in query_parts:
-                    on_i = query_parts.index(ON)
-                    on_column_1 = query_parts[on_i + 1]
-                    on_column_2 = query_parts[on_i + 3]
-
-                    commands[ON] = on_column_1, on_column_2
-
-                    _on()
-
-            if ORDER in query_parts:
-                order_i = query_parts.index(ORDER)
-                order_column = query_parts[order_i + 1]  
-                order_direc = query_parts[order_i + 2]
-                    
-                commands[ORDER] = order_column, order_direc
-
-                result = _order()
-
-    elif INSERT in query_parts:
-        insert_i = query_parts.index(INSERT)
-        insert_table = query_parts[insert_i + 2]
-
-        commands[INSERT] = insert_table
-        commands[FROM] = insert_table
-
-        if VALUES in query_parts:
-            values_i = query_parts.index(VALUES)
-            in_values = []
-            i = 1
-            while values_i + i < len(query_parts) :
-                in_values.append(query_parts[values_i + i])
+            while query_parts[select_i + i] != FROM:
+                select_columns.append(query_parts[select_i + i])
                 i += 1
 
-            commands[VALUES] = in_values    
+            commands[SELECT] = select_columns
 
-            _insert()
+            if FROM in query_parts:
+                from_i = query_parts.index(FROM)
+                table = query_parts[from_i + 1]
 
-    elif DELETE in query_parts:
-        commands[SELECT] = ["*"]
-        
-        if FROM in query_parts:
-            from_i = query_parts.index(FROM)
-            table = query_parts[from_i + 1]
+                commands[FROM] = table
 
-            commands[FROM] = table
+                result = _select()
 
-            result = _select()
+                if WHERE in query_parts:
+                    where_i = query_parts.index(WHERE)
+                    
+                    where_column = query_parts[where_i + 1]
+                    where_condition = query_parts[where_i + 2]
+                    value = query_parts[where_i + 3]
 
-            if WHERE in query_parts:
-                where_i = query_parts.index(WHERE)
-                
-                where_column = query_parts[where_i + 1]
-                where_condition = query_parts[where_i + 2]
-                value = query_parts[where_i + 3]
+                    commands[WHERE] = where_column, where_condition, value
 
-                commands[WHERE] = where_column, where_condition, value
+                    if OR in query_parts:
+                        or_i = query_parts.index(OR)
+                        where_column2 = query_parts[or_i + 1]
+                        where_condition2 = query_parts[or_i + 2]
+                        value2 = query_parts[or_i + 3]
 
-                _delete()
+                        commands[OR] = where_column2, where_condition2, value2
 
-    elif UPDATE in query_parts:
-        update_i = query_parts.index(UPDATE)
-        update_table = query_parts[update_i + 1]
+                    elif AND in query_parts:
+                        and_i = query_parts.index(AND)
+                        where_column2 = query_parts[and_i + 1]
+                        where_condition2 = query_parts[and_i + 2]
+                        value2 = query_parts[and_i + 3]
 
-        commands[UPDATE] = update_table
-        commands[FROM] = update_table
-        commands[SELECT] = ["*"]
+                        commands[AND] = where_column2, where_condition2, value2
 
-        if SET in query_parts:
-            set_i = query_parts.index(SET)
-            set_columns = []
-            set_values = []
-            i = 1
+                    result = _where()       
+                        
+                elif JOIN in query_parts: 
+                    join_i = query_parts.index(JOIN)
+                    join_table = query_parts[join_i + 1]
 
-            while query_parts[set_i + i] != WHERE:
-                set_columns.append(query_parts[set_i + i])
-                set_values.append(query_parts[set_i + 2 + i])
-                i += 3
-                
-            commands[SET] = set_columns, set_values
+                    commands[JOIN] = join_table
 
-            result = _select()
+                    if USING in query_parts:
+                        using_i = query_parts.index(USING)
+                        using_column = query_parts[using_i + 1] 
 
-            if WHERE in query_parts:
-                where_i = query_parts.index(WHERE)
+                        commands[USING] = using_column
 
-                where_column = query_parts[where_i + 1]
-                where_condition = query_parts[where_i + 2]
-                value = query_parts[where_i + 3]
+                        _using()
 
-                commands[WHERE] = where_column, where_condition, value
+                    elif ON in query_parts:
+                        on_i = query_parts.index(ON)
+                        on_column_1 = query_parts[on_i + 1]
+                        on_column_2 = query_parts[on_i + 3]
 
-                _update()
+                        commands[ON] = on_column_1, on_column_2
 
-    
+                        _on()
+
+                if ORDER in query_parts:
+                    order_i = query_parts.index(ORDER)
+                    order_column = query_parts[order_i + 1]  
+                    order_direc = query_parts[order_i + 2]
+                        
+                    commands[ORDER] = order_column, order_direc
+
+                    result = _order()
+
+        elif INSERT in query_parts:
+            insert_i = query_parts.index(INSERT)
+            insert_table = query_parts[insert_i + 2]
+
+            commands[INSERT] = insert_table
+            commands[FROM] = insert_table
+
+            if VALUES in query_parts:
+                values_i = query_parts.index(VALUES)
+                in_values = []
+                i = 1
+                while values_i + i < len(query_parts) :
+                    in_values.append(query_parts[values_i + i])
+                    i += 1
+
+                commands[VALUES] = in_values    
+
+                _insert()
+
+        elif DELETE in query_parts:
+            commands[SELECT] = ["*"]
+            
+            if FROM in query_parts:
+                from_i = query_parts.index(FROM)
+                table = query_parts[from_i + 1]
+
+                commands[FROM] = table
+
+                result = _select()
+
+                if WHERE in query_parts:
+                    where_i = query_parts.index(WHERE)
+                    
+                    where_column = query_parts[where_i + 1]
+                    where_condition = query_parts[where_i + 2]
+                    value = query_parts[where_i + 3]
+
+                    commands[WHERE] = where_column, where_condition, value
+
+                    _delete()
+
+        elif UPDATE in query_parts:
+            update_i = query_parts.index(UPDATE)
+            update_table = query_parts[update_i + 1]
+
+            commands[UPDATE] = update_table
+            commands[FROM] = update_table
+            commands[SELECT] = ["*"]
+
+            if SET in query_parts:
+                set_i = query_parts.index(SET)
+                set_columns = []
+                set_values = []
+                i = 1
+
+                while query_parts[set_i + i] != WHERE:
+                    set_columns.append(query_parts[set_i + i])
+                    set_values.append(query_parts[set_i + 2 + i])
+                    i += 3
+                    
+                commands[SET] = set_columns, set_values
+
+                result = _select()
+
+                if WHERE in query_parts:
+                    where_i = query_parts.index(WHERE)
+
+                    where_column = query_parts[where_i + 1]
+                    where_condition = query_parts[where_i + 2]
+                    value = query_parts[where_i + 3]
+
+                    commands[WHERE] = where_column, where_condition, value
+
+                    _update()
+
+    except:
         print("Erro: Query inválida.")
 
     print(result)
@@ -499,6 +499,8 @@ def data_import():
         print("Selecione csv ou um servidor (csv | mysql | postgres): ")
         answer = input(">> ")
 
+        answer = answer.lower()
+
     if answer == "mysql" or answer == "ml":
         mysql_import.mysqlimport()
     elif answer == "postgres" or answer == "ps":
@@ -512,7 +514,7 @@ def main():
     # wait for user interaction 
     answer = None
     while not (answer == "i" or answer == "c" or answer == "s"):
-        print("Importar, consultar ou sair? (i | c | s)")
+        print("Importar, consultar ou sair? (I | C | S)")
         answer = input(">> ")
 
     answer = answer.lower()
