@@ -411,8 +411,6 @@ def _order():
     return output
 
 def _on():
-    from_data = commands[FROM]
-    join_data = commands[JOIN]
     column1 = commands[ON][0]
     column2 = commands[ON][1]
 
@@ -422,7 +420,23 @@ def _on():
             return
 
 def _using():
-    return
+    global result
+
+    from_data = result
+    
+    commands[SELECT] = ["*"]
+    commands[FROM] = commands[JOIN]
+
+    join_data = _select()
+    join_column = commands[USING]
+
+    output = []
+
+    for row in from_data:
+        for row2 in join_data:
+            if row[join_column] == row2[join_column]:
+                output.append({**row, **row2})
+
 
 def _insert():
 
