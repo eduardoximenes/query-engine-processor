@@ -171,7 +171,7 @@ def process_query(query):
             
             print_flag = True
 
-            i = 0
+            i = 1
             # Store selected columns
             while query_parts[select_i + i] != FROM:
                 select_columns.append(query_parts[select_i + i])
@@ -186,7 +186,7 @@ def process_query(query):
                 commands[FROM] = table
 
                 result = _select()
-
+                
                 if JOIN in query_parts: 
                     join_i = query_parts.index(JOIN)
                     join_table = query_parts[join_i + 1]
@@ -231,7 +231,7 @@ def process_query(query):
                     value = query_parts[where_i + 3]
 
                     commands[WHERE] = where_column, where_condition, value
-
+                
                     if OR in query_parts:
                         or_i = query_parts.index(OR)
                         where_column2 = query_parts[or_i + 1]
@@ -350,7 +350,7 @@ def process_query(query):
         for row in result:
             print(row)
 
-        print("Total de resultados: {}.".format(len(result)))
+    print("Total de resultados: {}.".format(len(result)))
 
     return True
 
@@ -375,7 +375,7 @@ def _select():
         for key in iter(row):
             if key in columns:
                 filtered_row[key] = row[key]
-                output.append(filtered_row)
+        output.append(filtered_row)
     
     return output
 
@@ -597,3 +597,6 @@ def main():
 if __name__ == "__main__":
     while main():
         continue
+
+
+    # selecione  de tabela1 onde idade >  
