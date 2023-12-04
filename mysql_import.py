@@ -51,7 +51,7 @@ def show_database():
     cursor = conn.cursor()
     databases = ("show databases;")
     cursor.execute(databases)
-    print("Esquemas no MySQL server:")
+    print("Schemas no MySQL server:")
     for (databases) in cursor:
         print ('* '+databases[0])
 
@@ -61,7 +61,7 @@ def mysqlimport():
     show_database()
     conn = None
     while not conn :
-        print("Selecione um esquema: ")
+        print("Selecione um Schema: ")
         database_glob = input('>> ')
         conn = mysqlconnect() 
    
