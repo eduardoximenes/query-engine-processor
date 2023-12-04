@@ -349,8 +349,8 @@ def process_query(query):
     if print_flag:
         for row in result:
             print(row)
-
-    print("Total de resultados: {}.".format(len(result)))
+        print("Total de resultados: {}.".format(len(result)))
+   
 
     return True
 
