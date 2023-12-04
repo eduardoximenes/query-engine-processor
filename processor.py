@@ -80,12 +80,29 @@ def get_table_data(schema, table):
         data = read_csv(table_path)
         return data
 
+def hash(data1, data2, join_column):
+    
+    index = {}
+    for row in data1:
+        key = row[join_column]
+        index.setdefault(key, []).append(row)
+    
+    join = []
+    for row in data2:
+        key = row[join_column]
+        if key in index:
+            for valid_row in index[key]:
+                merged_row = {**row, **valid_row}
+                join.append(merged_row)
+
+    return join
 
 def query():
 
     global schema
     global commands
 
+    # Commands dictionary
     commands = {
         "selecione": None,          # SELECT
         "atualize": None,           # UPDATE
@@ -136,22 +153,26 @@ def query():
 
     return True
 
-
 def process_query(query):
 
     global result
     result = []
 
+    # Separate each word/symbol in query
     query_list = query.split(' ')
     query_parts = [element.replace(',', '') for element in query_list]
-    print(query_parts)
+    
+    print_flag = False
 
     try:
         if SELECT in query_parts:
             select_i = query_parts.index(SELECT)
             select_columns = []
-            i = 0
+            
+            print_flag = True
 
+            i = 0
+            # Store selected columns
             while query_parts[select_i + i] != FROM:
                 select_columns.append(query_parts[select_i + i])
                 i += 1
@@ -165,6 +186,42 @@ def process_query(query):
                 commands[FROM] = table
 
                 result = _select()
+
+                if JOIN in query_parts: 
+                    join_i = query_parts.index(JOIN)
+                    join_table = query_parts[join_i + 1]
+
+                    commands[JOIN] = join_table
+
+                    if USING in query_parts:
+                        using_i = query_parts.index(USING)
+                        using_column = query_parts[using_i + 1] 
+
+                        commands[USING] = using_column
+
+                        result =_using()
+
+                    elif ON in query_parts:
+                        on_i = query_parts.index(ON)
+
+                        # Join columns
+                        on_column_1 = query_parts[on_i + 1]
+                        on_column_2 = query_parts[on_i + 3]
+
+                        # Separate table.column
+                        on_var_1 = on_column_1.split(".")
+                        on_var_2 = on_column_2.split(".")
+
+                        # Check if tables are correct:
+                        if on_var_1[0] != commands[FROM] or on_var_2[0] != commands[JOIN]:
+                            return False
+                        # Check if columns are equal    
+                        if on_var_1[1] != on_var_2[1]:
+                            return False
+                        
+                        commands[ON] = on_var_1[1]
+
+                        result = _on()
 
                 if WHERE in query_parts:
                     where_i = query_parts.index(WHERE)
@@ -193,33 +250,15 @@ def process_query(query):
 
                     result = _where()       
                         
-                elif JOIN in query_parts: 
-                    join_i = query_parts.index(JOIN)
-                    join_table = query_parts[join_i + 1]
-
-                    commands[JOIN] = join_table
-
-                    if USING in query_parts:
-                        using_i = query_parts.index(USING)
-                        using_column = query_parts[using_i + 1] 
-
-                        commands[USING] = using_column
-
-                        _using()
-
-                    elif ON in query_parts:
-                        on_i = query_parts.index(ON)
-                        on_column_1 = query_parts[on_i + 1]
-                        on_column_2 = query_parts[on_i + 3]
-
-                        commands[ON] = on_column_1, on_column_2
-
-                        _on()
-
                 if ORDER in query_parts:
                     order_i = query_parts.index(ORDER)
-                    order_column = query_parts[order_i + 1]  
-                    order_direc = query_parts[order_i + 2]
+                    order_column = query_parts[order_i + 1]
+                    
+                    # If order direction not defined
+                    if (order_i + 3) > len(query_parts):
+                        order_direc = 'crescente'
+                    else:
+                        order_direc = query_parts[order_i + 2]
                         
                     commands[ORDER] = order_column, order_direc
 
@@ -236,7 +275,9 @@ def process_query(query):
                 values_i = query_parts.index(VALUES)
                 in_values = []
                 i = 1
-                while values_i + i < len(query_parts) :
+
+                # Store insert values
+                while values_i + i < len(query_parts):
                     in_values.append(query_parts[values_i + i])
                     i += 1
 
@@ -280,6 +321,7 @@ def process_query(query):
                 set_values = []
                 i = 1
 
+                # Store update values
                 while query_parts[set_i + i] != WHERE:
                     set_columns.append(query_parts[set_i + i])
                     set_values.append(query_parts[set_i + 2 + i])
@@ -302,8 +344,13 @@ def process_query(query):
 
     except:
         print("Erro: Query inválida.")
+    
+    # Print only for projection (select) queries
+    if print_flag:
+        for row in result:
+            print(row)
 
-    print(result)
+        print("Total de resultados: {}.".format(len(result)))
 
     return True
 
@@ -313,6 +360,7 @@ def _select():
     columns = commands[SELECT]
     table = commands[FROM]
    
+    # Get full table data
     data = []
     data = get_table_data(schema, table)
 
@@ -321,6 +369,7 @@ def _select():
 
     output = []
 
+    # Filter selected columns
     for row in data:
         filtered_row = {}
         for key in iter(row):
@@ -340,6 +389,7 @@ def _where():
 
     data = _where_condition(column, condition, value)
 
+    # Handle 'or' operator
     if commands[OR] != None:
         column2 = commands[OR][0]
         condition2 = commands[OR][1]
@@ -351,6 +401,7 @@ def _where():
         for row2 in data2: 
             output.append(row2)
 
+    # Handle 'and' operator
     elif commands[AND] != None:
         column2 = commands[AND][0]
         condition2 = commands[AND][1]
@@ -411,13 +462,17 @@ def _order():
     return output
 
 def _on():
-    column1 = commands[ON][0]
-    column2 = commands[ON][1]
+    global result
 
+    from_data = result
+    join_column = commands[ON]
 
-    for row in join_data:
-        if row.get(column2) in from_data.get(column1):
-            return
+    commands[SELECT] = ["*"]
+    commands[FROM] = commands[JOIN]
+
+    join_data = _select()
+
+    return hash(from_data, join_data, join_column)
 
 def _using():
     global result
@@ -426,17 +481,11 @@ def _using():
     
     commands[SELECT] = ["*"]
     commands[FROM] = commands[JOIN]
-
+   
     join_data = _select()
     join_column = commands[USING]
 
-    output = []
-
-    for row in from_data:
-        for row2 in join_data:
-            if row[join_column] == row2[join_column]:
-                output.append({**row, **row2})
-
+    return hash(from_data, join_data, join_column)
 
 def _insert():
 
@@ -457,9 +506,9 @@ def _insert():
             return False
 
         new_row = {field: value for field, value in zip(data[0].keys(), values)}
-        print(new_row)
         data.append(new_row)
 
+        # Save new data
         write_csv(insert_table, data, headers, schema)
         return True
     
@@ -484,6 +533,7 @@ def _update():
         for value, column in zip(update_values, update_columns):
             row[column] = value
     
+    # Save new data
     write_csv(update_table, data, headers, schema)
 
     return True
@@ -494,6 +544,7 @@ def _delete():
 
     try:
         data = result
+        # Get data to be deleted
         delete_data = _where()
 
         headers = list(data[0])
@@ -501,6 +552,7 @@ def _delete():
         for row in delete_data:
             data.remove(row)
 
+        # Save new data
         write_csv(commands[FROM], data, headers, schema)
         return True
     
@@ -525,7 +577,7 @@ def data_import():
     return
 
 def main():
-    # wait for user interaction 
+    # Wait for user interaction 
     answer = None
     while not (answer == "i" or answer == "c" or answer == "s"):
         print("Importar, consultar ou sair? (I | C | S)")
