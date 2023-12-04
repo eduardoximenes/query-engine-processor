@@ -599,4 +599,4 @@ if __name__ == "__main__":
         continue
 
 
-    # selecione  de tabela1 onde idade >  
+    
