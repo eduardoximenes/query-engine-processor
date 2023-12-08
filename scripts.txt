@@ -1,0 +1,19 @@
+**********SELECT***********
+selecione first_name, last_name, gender de employees onde gender = M e last_name = Facello ordene first_name decrescente
+
+selecione * de employees junte salaries usando emp_no onde emp_no = 10001 ordene salary
+
+selecione * de employees junte salaries usando emp_no onde gender = M e last_name = Facello ordene salary (2 minutos pra rodar X 20 segundos no MySQL) 
+
+selecione * de employees junte salaries em employees.emp_no = salaries.emp_no onde gender = M e last_name = Facello ordene salary
+
+**********INSERT***********
+insira na departments valores d011, DAINF
+selecione * de departments ordene dept_no desc
+
+**********UPDATE***********
+atualize departments defina dept_name = DAELN onde dept_no = d011
+selecione * de departments ordene dept_no desc
+
+**********DELETE***********
+apague de departments onde dept_name = DAELN
