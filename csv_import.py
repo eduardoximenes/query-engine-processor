@@ -3,23 +3,23 @@ import os
 
 def csv_import():
     #Define the path of csv to import
-    print('Type the csv path to import')
+    print('Digite o caminho do csv para importar:')
     input_path = input('>> ')
 
     #Verify if the csv exists
     if not os.path.isfile(input_path):
-        print("Csv not found!")
+        print("Csv não encontrado!")
         return
 
     #Define the path to import the csv content
-    print('Type the output path')
+    print('Digite o caminho o qual será importado:')
     output_path = input('>> ')
 
     #Verify if the file already exists, if exists allow to override or abort
     if os.path.isfile(output_path):
-        confirm = input("The file already exist, do you wan't yo override? (y/n): ")
-        if confirm.lower() != 'y':
-            print("Canceled!")
+        confirm = input("O arquivo já existe, gostaria de sobreescrever? (s/n): ")
+        if confirm.lower() != 's':
+            print("Cancelado!")
             return
 
     #Creates the csv file
@@ -34,6 +34,6 @@ def csv_import():
             for line in csv_reader:
                 csv_writer.writerow(line)
 
-        print("Ended import!")
+        print("Importação encerrada!")
     except Exception as e:
         print("Error:", str(e))

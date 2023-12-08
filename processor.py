@@ -342,15 +342,14 @@ def process_query(query):
 
                     _update()
 
+        # Print only for projection (select) queries
+        if print_flag:
+            for row in result:
+                print(row)
+            print("Total de resultados: {}.".format(len(result)))
+
     except:
-        print("Erro: Query inválida.")
-    
-    # Print only for projection (select) queries
-    if print_flag:
-        for row in result:
-            print(row)
-        print("Total de resultados: {}.".format(len(result)))
-   
+        print("Erro: Query inválida.") 
 
     return True
 
