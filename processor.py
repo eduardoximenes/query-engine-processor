@@ -305,6 +305,22 @@ def process_query(query):
 
                     commands[WHERE] = where_column, where_condition, value
 
+                    if OR in query_parts:
+                        or_i = query_parts.index(OR)
+                        where_column2 = query_parts[or_i + 1]
+                        where_condition2 = query_parts[or_i + 2]
+                        value2 = query_parts[or_i + 3]
+
+                        commands[OR] = where_column2, where_condition2, value2
+
+                    elif AND in query_parts:
+                        and_i = query_parts.index(AND)
+                        where_column2 = query_parts[and_i + 1]
+                        where_condition2 = query_parts[and_i + 2]
+                        value2 = query_parts[and_i + 3]
+
+                        commands[AND] = where_column2, where_condition2, value2
+
                     _delete()
 
         elif UPDATE in query_parts:
@@ -339,6 +355,22 @@ def process_query(query):
                     value = query_parts[where_i + 3]
 
                     commands[WHERE] = where_column, where_condition, value
+
+                    if OR in query_parts:
+                        or_i = query_parts.index(OR)
+                        where_column2 = query_parts[or_i + 1]
+                        where_condition2 = query_parts[or_i + 2]
+                        value2 = query_parts[or_i + 3]
+
+                        commands[OR] = where_column2, where_condition2, value2
+
+                    elif AND in query_parts:
+                        and_i = query_parts.index(AND)
+                        where_column2 = query_parts[and_i + 1]
+                        where_condition2 = query_parts[and_i + 2]
+                        value2 = query_parts[and_i + 3]
+
+                        commands[AND] = where_column2, where_condition2, value2
 
                     _update()
 
